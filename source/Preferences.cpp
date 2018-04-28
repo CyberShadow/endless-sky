@@ -35,6 +35,7 @@ namespace {
 		{ "Rotate flagship in HUD", &preferences.rotateFlagshipInHud },
 		{ "Show planet labels", &preferences.showPlanetLabels },
 		{ "Show mini-map", &preferences.showMinimap },
+		{ "Use shaders", &preferences.useShaders },
 		{ "fullscreen", &preferences.fullscreen }, // Implicit
 		{ "maximized", &preferences.maximized }, // Implicit
 
@@ -85,6 +86,7 @@ void Preferences::Load()
 	drawBackgroundHaze = true;
 	hideUnexploredMapRegions = true;
 	turretsFocusFire = true;
+	useShaders = true;
 	scrollSpeed = 60;
 
 	DataFile prefs(Files::Config() + "preferences.txt");

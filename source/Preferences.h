@@ -44,6 +44,7 @@ public:
 	bool rotateFlagshipInHud;
 	bool showPlanetLabels;
 	bool showMinimap;
+	bool useShaders;
 	bool fullscreen; // Implicit
 	bool maximized; // Implicit
 
