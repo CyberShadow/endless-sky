@@ -47,6 +47,12 @@ public:
 	// The next invocation with the same topic will return false.
 	static bool ShouldShow(Topic);
 
+	// Just check whether the player saw this topic.
+	static bool Seen(Topic);
+
+	// Clear seen flags on all topics.
+	static void Reactivate();
+
 	// Get the help message for this topic.
 	static std::string HelpMessage(Topic);
 
@@ -54,6 +60,7 @@ private:
 	// Get the topic label for data and save files.
 	static const char* TopicName(Topic);
 
+	friend class Preferences;
 };
 
 

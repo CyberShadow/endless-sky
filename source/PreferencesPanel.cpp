@@ -40,17 +40,17 @@ using namespace std;
 
 namespace {
 	// Settings that require special handling.
-	const string ZOOM_FACTOR = "Main zoom factor";
+
+	enum {
+		ZOOM_FACTOR = Preferences::MAX,
+		VIEW_ZOOM_FACTOR,
+		REACTIVATE_HELP,
+		SCROLL_SPEED,
+	};
+
 	const int ZOOM_FACTOR_MIN = 100;
 	const int ZOOM_FACTOR_MAX = 200;
 	const int ZOOM_FACTOR_INCREMENT = 10;
-	const string VIEW_ZOOM_FACTOR = "View zoom factor";
-	const string EXPEND_AMMO = "Escorts expend ammo";
-	const string TURRET_TRACKING = "Turret tracking";
-	const string FOCUS_PREFERENCE = "Turrets focus fire";
-	const string FRUGAL_ESCORTS = "Escorts use ammo frugally";
-	const string REACTIVATE_HELP = "Reactivate first-time help";
-	const string SCROLL_SPEED = "Scroll speed";
 }
 
 
@@ -62,6 +62,7 @@ PreferencesPanel::PreferencesPanel()
 		selectedPlugin = GameData::PluginAboutText().begin()->first;
 	
 	SetIsFullScreen(true);
+	hoverPreference = -1;
 }
 
 
@@ -138,7 +139,7 @@ bool PreferencesPanel::Click(int x, int y, int clicks)
 	for(const auto &zone : prefZones)
 		if(zone.Contains(point))
 		{
-			if(zone.Value() == ZOOM_FACTOR)
+			if(zone.Value().first == ZOOM_FACTOR)
 			{
 				int newZoom = Screen::Zoom() + ZOOM_FACTOR_INCREMENT;
 				if(newZoom > ZOOM_FACTOR_MAX)
@@ -160,23 +161,18 @@ bool PreferencesPanel::Click(int x, int y, int clicks)
 				point += .5 * Point(Screen::RawWidth(), Screen::RawHeight());
 				SDL_WarpMouseInWindow(nullptr, point.X(), point.Y());
 			}
-			if(zone.Value() == VIEW_ZOOM_FACTOR)
+			else if(zone.Value().first == VIEW_ZOOM_FACTOR)
 			{
 				// Increase the zoom factor unless it is at the maximum. In that
 				// case, cycle around to the lowest zoom factor.
 				if(!Preferences::ZoomViewIn())
 					while(Preferences::ZoomViewOut()) {}
 			}
-			if(zone.Value() == EXPEND_AMMO)
+			else if(zone.Value().first == Preferences::ESCORTS_EXPEND_AMMO)
 				Preferences::ToggleAmmoUsage();
-			else if(zone.Value() == TURRET_TRACKING)
-				Preferences::Set(FOCUS_PREFERENCE, !Preferences::Has(FOCUS_PREFERENCE));
-			else if(zone.Value() == REACTIVATE_HELP)
-			{
-				for(const auto &it : GameData::HelpTemplates())
-					Preferences::Set("help: " + it.first, false);
-			}
-			else if(zone.Value() == SCROLL_SPEED)
+			else if(zone.Value().first == REACTIVATE_HELP)
+				Help::Reactivate();
+			else if(zone.Value().first == SCROLL_SPEED)
 			{
 				// Toogle between three different speeds.
 				int speed = Preferences::ScrollSpeed() + 20;
@@ -185,7 +181,10 @@ bool PreferencesPanel::Click(int x, int y, int clicks)
 				Preferences::SetScrollSpeed(speed);
 			}
 			else
-				Preferences::Set(zone.Value(), !Preferences::Has(zone.Value()));
+			{
+				Preferences::Preference p = (Preferences::Preference)zone.Value().first;
+				Preferences::Set(p, !Preferences::Has(p));
+			}
 			break;
 		}
 	
@@ -207,10 +206,10 @@ bool PreferencesPanel::Hover(int x, int y)
 		if(zones[index].Contains(hoverPoint))
 			hover = index;
 	
-	hoverPreference.clear();
+	hoverPreference = -1;
 	for(const auto &zone : prefZones)
 		if(zone.Contains(hoverPoint))
-			hoverPreference = zone.Value();
+			hoverPreference = zone.Value().first;
 	
 	hoverPlugin.clear();
 	for(const auto &zone : pluginZones)
@@ -225,7 +224,7 @@ bool PreferencesPanel::Hover(int x, int y)
 // Change the value being hovered over in the direction of the scroll.
 bool PreferencesPanel::Scroll(double dx, double dy)
 {
-	if(!dy || hoverPreference.empty())
+	if(!dy || hoverPreference < 0)
 		return false;
 	
 	if(hoverPreference == ZOOM_FACTOR)
@@ -416,46 +415,48 @@ void PreferencesPanel::DrawSettings()
 	int firstY = -248;
 	table.DrawAt(Point(-130, firstY));
 	
-	static const string SETTINGS[] = {
-		"Display",
-		ZOOM_FACTOR,
-		VIEW_ZOOM_FACTOR,
-		"Show status overlays",
-		"Highlight player's flagship",
-		"Rotate flagship in HUD",
-		"Show planet labels",
-		"Show mini-map",
-		"",
-		"AI",
-		"Automatic aiming",
-		"Automatic firing",
-		EXPEND_AMMO,
-		TURRET_TRACKING,
-		"",
-		"Performance",
-		"Show CPU / GPU load",
-		"Render motion blur",
-		"Reduce large graphics",
-		"Draw background haze",
-		"Show hyperspace flash",
-		"\n",
-		"Other",
-		"Clickable radar display",
-		"Hide unexplored map regions",
-		REACTIVATE_HELP,
-		"Rehire extra crew when lost",
-		SCROLL_SPEED,
-		"Show escort systems on map",
-		"Warning siren"
+	static const pair<int, const char*> SETTINGS[] = {
+		make_pair(                                      -1, "Display"),
+		make_pair(                             ZOOM_FACTOR, "Main zoom factor"),
+		make_pair(                        VIEW_ZOOM_FACTOR, "View zoom factor"),
+		make_pair(       Preferences::SHOW_STATUS_OVERLAYS, nullptr),
+		make_pair( Preferences::HIGHLIGHT_PLAYERS_FLAGSHIP, nullptr),
+		make_pair(     Preferences::ROTATE_FLAGSHIP_IN_HUD, nullptr),
+		make_pair(         Preferences::SHOW_PLANET_LABELS, nullptr),
+		make_pair(               Preferences::SHOW_MINIMAP, nullptr),
+		make_pair(                                      -1, ""),
+		make_pair(                                      -1, "AI"),
+		make_pair(           Preferences::AUTOMATIC_AIMING, nullptr),
+		make_pair(           Preferences::AUTOMATIC_FIRING, nullptr),
+		make_pair(        Preferences::ESCORTS_EXPEND_AMMO, nullptr),
+		make_pair(         Preferences::TURRETS_FOCUS_FIRE, "Turret tracking"),
+		make_pair(                                      -1, ""),
+		make_pair(                                      -1, "Performance"),
+		make_pair(          Preferences::SHOW_CPU_GPU_LOAD, nullptr),
+		make_pair(         Preferences::RENDER_MOTION_BLUR, nullptr),
+		make_pair(      Preferences::REDUCE_LARGE_GRAPHICS, nullptr),
+		make_pair(       Preferences::DRAW_BACKGROUND_HAZE, nullptr),
+		make_pair(      Preferences::SHOW_HYPERSPACE_FLASH, nullptr),
+		make_pair(                                      -1, "\n"),
+		make_pair(                                      -1, "Other"),
+		make_pair(    Preferences::CLICKABLE_RADAR_DISPLAY, nullptr),
+		make_pair(Preferences::HIDE_UNEXPLORED_MAP_REGIONS, nullptr),
+		make_pair(                         REACTIVATE_HELP, "Reactivate first-time help"),
+		make_pair(Preferences::REHIRE_EXTRA_CREW_WHEN_LOST, nullptr),
+		make_pair(                            SCROLL_SPEED, "Scroll speed"),
+		make_pair( Preferences::SHOW_ESCORT_SYSTEMS_ON_MAP, nullptr),
+		make_pair(              Preferences::WARNING_SIREN, nullptr),
 	};
 	bool isCategory = true;
-	for(const string &setting : SETTINGS)
+	for(const pair<int, const char*> &setting : SETTINGS)
 	{
 		// Check if this is a category break or column break.
-		if(setting.empty() || setting == "\n")
+		Preferences::Preference preference = (Preferences::Preference)setting.first;
+		string title = setting.second ? setting.second : Preferences::Name(preference);
+		if(title.empty() || title == "\n")
 		{
 			isCategory = true;
-			if(!setting.empty())
+			if(!title.empty())
 				table.DrawAt(Point(130, firstY));
 			continue;
 		}
@@ -465,77 +466,77 @@ void PreferencesPanel::DrawSettings()
 			isCategory = false;
 			table.DrawGap(10);
 			table.DrawUnderline(medium);
-			table.Draw(setting, bright);
+			table.Draw(title, bright);
 			table.Advance();
 			table.DrawGap(5);
 			continue;
 		}
 		
 		// Record where this setting is displayed, so the user can click on it.
-		prefZones.emplace_back(table.GetCenterPoint(), table.GetRowSize(), setting);
+		prefZones.emplace_back(table.GetCenterPoint(), table.GetRowSize(), make_pair(preference, title));
 		
 		// Get the "on / off" text for this setting.
-		bool isOn = Preferences::Has(setting);
+		bool isOn = false;
 		string text;
-		if(setting == ZOOM_FACTOR)
+		if((int)preference == ZOOM_FACTOR)
 		{
 			isOn = true;
 			text = to_string(Screen::Zoom());
 		}
-		else if(setting == VIEW_ZOOM_FACTOR)
+		else if((int)preference == VIEW_ZOOM_FACTOR)
 		{
 			isOn = true;
 			text = to_string(static_cast<int>(100. * Preferences::ViewZoom()));
 		}
-		else if(setting == EXPEND_AMMO)
+		else if(preference == Preferences::ESCORTS_EXPEND_AMMO)
+		{
+			isOn = Preferences::Has(preference);
 			text = Preferences::AmmoUsage();
-		else if(setting == TURRET_TRACKING)
+		}
+		else if(preference == Preferences::TURRETS_FOCUS_FIRE)
 		{
 			isOn = true;
-			text = Preferences::Has(FOCUS_PREFERENCE) ? "focused" : "opportunistic";
+			text = Preferences::Has(Preferences::TURRETS_FOCUS_FIRE) ? "focused" : "opportunistic";
 		}
-		else if(setting == REACTIVATE_HELP)
+		else if((int)preference == REACTIVATE_HELP)
 		{
 			// Check how many help messages have been displayed.
-			const map<string, string> &help = GameData::HelpTemplates();
 			int shown = 0;
 			int total = 0;
-			for(const auto &it : help)
+			for(int h = 0; h < Help::MAX; h++)
 			{
 				// Don't count certain special help messages that are always
 				// active for new players.
-				bool special = false;
-				const string SPECIAL_HELP[] = {"basics", "lost"};
-				for(const string &str : SPECIAL_HELP)
-					if(it.first.find(str) == 0)
-						special = true;
-				
-				if(!special)
-				{
-					++total;
-					shown += Preferences::Has("help: " + it.first);
-				}
+				if((h >= Help::BASICS_1 && h <= Help::BASICS_2) ||
+					(h >= Help::LOST_1 && h <= Help::LOST_7))
+					continue;
+
+				++total;
+				shown += Help::Seen((Help::Topic)h);
 			}
 			
 			if(shown)
-				text = to_string(shown) + " / " + to_string(total);
+				text = to_string(shown) + " / " + to_string(Help::MAX);
 			else
 			{
 				isOn = true;
 				text = "done";
 			}
 		}
-		else if(setting == SCROLL_SPEED)
+		else if((int)preference == SCROLL_SPEED)
 		{
 			isOn = true;
 			text = to_string(Preferences::ScrollSpeed());
 		}
 		else
+		{
+			isOn = Preferences::Has(preference);
 			text = isOn ? "on" : "off";
+		}
 		
-		if(setting == hoverPreference)
+		if(preference == hoverPreference)
 			table.DrawHighlight(back);
-		table.Draw(setting, isOn ? medium : dim);
+		table.Draw(title, isOn ? medium : dim);
 		table.Draw(text, isOn ? bright : medium);
 	}
 }

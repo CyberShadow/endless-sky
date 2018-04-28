@@ -105,10 +105,10 @@ int main(int argc, char *argv[])
 		
 		Preferences::Load();
 		Uint32 flags = SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_SHOWN | SDL_WINDOW_ALLOW_HIGHDPI;
-		bool isFullscreen = Preferences::Has("fullscreen");
+		bool isFullscreen = Preferences::Has(Preferences::FULLSCREEN);
 		if(isFullscreen)
 			flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
-		else if(Preferences::Has("maximized"))
+		else if(Preferences::Has(Preferences::MAXIMIZED))
 			flags |= SDL_WINDOW_MAXIMIZED;
 		
 		// Make the window just slightly smaller than the monitor resolution.
@@ -349,8 +349,8 @@ int main(int argc, char *argv[])
 		
 		// Remember the window state.
 		bool isMaximized = (SDL_GetWindowFlags(window) & SDL_WINDOW_MAXIMIZED);
-		Preferences::Set("maximized", isMaximized);		
-		Preferences::Set("fullscreen", isFullscreen);
+		Preferences::Set(Preferences::MAXIMIZED, isMaximized);
+		Preferences::Set(Preferences::FULLSCREEN, isFullscreen);
 		// The Preferences class reads the screen dimensions, so update them to
 		// match the actual window size.
 		Screen::SetRaw(windowWidth, windowHeight);

@@ -412,7 +412,7 @@ void Engine::Step(bool isActive)
 	}
 		
 	// Draw a highlight to distinguish the flagship from other ships.
-	if(flagship && !flagship->IsDestroyed() && Preferences::Has("Highlight player's flagship"))
+	if(flagship && !flagship->IsDestroyed() && Preferences::Has(Preferences::HIGHLIGHT_PLAYERS_FLAGSHIP))
 	{
 		highlightSprite = flagship->GetSprite();
 		highlightUnit = flagship->Unit() * zoom;
@@ -492,7 +492,7 @@ void Engine::Step(bool isActive)
 	
 	// Create the status overlays.
 	statuses.clear();
-	if(isActive && Preferences::Has("Show status overlays"))
+	if(isActive && Preferences::Has(Preferences::SHOW_STATUS_OVERLAYS))
 		for(const auto &it : ships)
 		{
 			if(!it->GetGovernment() || it->GetSystem() != currentSystem || it->Cloaking() == 1.)
@@ -512,7 +512,7 @@ void Engine::Step(bool isActive)
 	
 	// Create the planet labels.
 	labels.clear();
-	if(currentSystem && Preferences::Has("Show planet labels"))
+	if(currentSystem && Preferences::Has(Preferences::SHOW_PLANET_LABELS))
 	{
 		for(const StellarObject &object : currentSystem->Objects())
 		{
@@ -533,7 +533,7 @@ void Engine::Step(bool isActive)
 	if(flagship && flagship->Hull())
 	{
 		Point shipFacingUnit(0., -1.);
-		if(Preferences::Has("Rotate flagship in HUD"))
+		if(Preferences::Has(Preferences::ROTATE_FLAGSHIP_IN_HUD))
 			shipFacingUnit = flagship->Facing().Unit();
 		
 		info.SetSprite("player sprite", flagship->GetSprite(), shipFacingUnit, flagship->GetFrame(step));
@@ -884,7 +884,7 @@ void Engine::Draw() const
 		for(int i = 0; i < 2; ++i)
 			SpriteShader::Draw(mark[i], center + Point(dx[i], 0.), 1., targetSwizzle);
 	}
-	if(jumpCount && Preferences::Has("Show mini-map"))
+	if(jumpCount && Preferences::Has(Preferences::SHOW_MINIMAP))
 		MapPanel::DrawMiniMap(player, .5 * min(1., jumpCount / 30.), jumpInProgress, step);
 	
 	// Draw ammo status.
@@ -932,7 +932,7 @@ void Engine::Draw() const
 	// filling the entire backlog of sprites before landing on a planet.
 	GameData::Progress();
 	
-	if(Preferences::Has("Show CPU / GPU load"))
+	if(Preferences::Has(Preferences::SHOW_CPU_GPU_LOAD))
 	{
 		string loadString = to_string(lround(load * 100.)) + "% CPU";
 		Color color = *colors.Get("medium");
@@ -955,7 +955,7 @@ void Engine::Click(const Point &from, const Point &to, bool hasShift)
 	const Interface *interface = GameData::Interfaces().Get("hud");
 	Point radarCenter = interface->GetPoint("radar");
 	double radarRadius = interface->GetValue("radar radius");
-	if(Preferences::Has("Clickable radar display") && (from - radarCenter).Length() <= radarRadius)
+	if(Preferences::Has(Preferences::CLICKABLE_RADAR_DISPLAY) && (from - radarCenter).Length() <= radarRadius)
 		isRadarClick = true;
 	else
 		isRadarClick = false;
@@ -981,7 +981,7 @@ void Engine::RClick(const Point &point)
 	const Interface *interface = GameData::Interfaces().Get("hud");
 	Point radarCenter = interface->GetPoint("radar");
 	double radarRadius = interface->GetValue("radar radius");
-	if(Preferences::Has("Clickable radar display") && (point - radarCenter).Length() <= radarRadius)
+	if(Preferences::Has(Preferences::CLICKABLE_RADAR_DISPLAY) && (point - radarCenter).Length() <= radarRadius)
 		clickPoint = (point - radarCenter) / RADAR_SCALE;
 	else
 		clickPoint = point / zoom;
@@ -1184,7 +1184,7 @@ void Engine::CalculateStep()
 						it.GetPlanet()->WormholeDestination(playerSystem) == flagship->GetSystem())
 					player.Visit(it.GetPlanet());
 		
-		doFlash = Preferences::Has("Show hyperspace flash");
+		doFlash = Preferences::Has(Preferences::SHOW_HYPERSPACE_FLASH);
 		playerSystem = flagship->GetSystem();
 		player.SetSystem(playerSystem);
 		EnterSystem();
@@ -1861,7 +1861,7 @@ void Engine::FillRadar()
 		--alarmTime;
 	else if(hasHostiles && !hadHostiles)
 	{
-		if(Preferences::Has("Warning siren"))
+		if(Preferences::Has(Preferences::WARNING_SIREN))
 			Audio::Play(Audio::Get("alarm"));
 		alarmTime = 180;
 		hadHostiles = true;

@@ -19,6 +19,7 @@ PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 #include "Command.h"
 
 #include <string>
+#include <utility>
 #include <vector>
 
 
@@ -57,13 +58,13 @@ private:
 	Point hoverPoint;
 	// Which page of the preferences we're on.
 	char page = 'c';
-	std::string hoverPreference;
+	int hoverPreference;
 	
 	std::string selectedPlugin;
 	std::string hoverPlugin;
 	
 	std::vector<ClickZone<Command>> zones;
-	std::vector<ClickZone<std::string>> prefZones;
+	std::vector<ClickZone<std::pair<int, std::string>>> prefZones;
 	std::vector<ClickZone<std::string>> pluginZones;
 };
 

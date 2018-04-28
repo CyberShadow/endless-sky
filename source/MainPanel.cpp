@@ -156,7 +156,7 @@ void MainPanel::Draw()
 			isDragging = false;
 	}
 	
-	if(Preferences::Has("Show CPU / GPU load"))
+	if(Preferences::Has(Preferences::SHOW_CPU_GPU_LOAD))
 	{
 		string loadString = to_string(lround(load * 100.)) + "% GPU";
 		const Color &color = *GameData::Colors().Get("medium");

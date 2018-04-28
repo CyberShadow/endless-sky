@@ -13,18 +13,63 @@ PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 #ifndef PREFERENCES_H_
 #define PREFERENCES_H_
 
-#include <string>
+#include "Help.h"
 
+#include <string>
 
 
 class Preferences {
 public:
+	enum Preference {
+		// Boolean preferences
+
+		// Display
+		SHOW_STATUS_OVERLAYS,
+		HIGHLIGHT_PLAYERS_FLAGSHIP,
+		ROTATE_FLAGSHIP_IN_HUD,
+		SHOW_PLANET_LABELS,
+		SHOW_MINIMAP,
+		FULLSCREEN, // Implicit
+		MAXIMIZED, // Implicit
+
+		// AI
+		AUTOMATIC_AIMING,
+		AUTOMATIC_FIRING,
+		ESCORTS_EXPEND_AMMO,
+		FRUGAL_ESCORTS,
+		TURRETS_FOCUS_FIRE,
+		DAMAGED_FIGHTERS_RETREAT, // Hidden
+
+		// Performance
+		SHOW_CPU_GPU_LOAD,
+		RENDER_MOTION_BLUR,
+		REDUCE_LARGE_GRAPHICS,
+		DRAW_BACKGROUND_HAZE,
+		SHOW_HYPERSPACE_FLASH,
+
+		// Other
+		CLICKABLE_RADAR_DISPLAY,
+		HIDE_UNEXPLORED_MAP_REGIONS,
+		REHIRE_EXTRA_CREW_WHEN_LOST,
+		SHOW_ESCORT_SYSTEMS_ON_MAP,
+		WARNING_SIREN,
+
+		MAX_NAMED_BOOLEAN,
+		SEEN_HELP_0 = MAX_NAMED_BOOLEAN,
+		SEEN_HELP_MAX = SEEN_HELP_0 + Help::MAX,
+
+		MAX_BOOLEAN = SEEN_HELP_MAX,
+		MAX = MAX_BOOLEAN,
+	};
+
 	static void Load();
 	static void Save();
 	
-	static bool Has(const std::string &name);
-	static void Set(const std::string &name, bool on = true);
-	
+	static bool Has(Preference);
+	static void Set(Preference, bool on = true);
+
+	static std::string Name(Preference);
+
 	// Toogle the ammo usage preferences, cycling between "never," "frugally,"
 	// and "always."
 	static void ToggleAmmoUsage();

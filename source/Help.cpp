@@ -41,16 +41,32 @@ namespace {
 		"stranded",
 		"trading",
 	};
+
+	static Preferences::Preference GetPreference(Help::Topic topic)
+	{
+		return (Preferences::Preference)(Preferences::SEEN_HELP_0 + topic);
+	}
 }
 
 bool Help::ShouldShow(Topic topic)
 {
-	Preferences::Preference preference = (Preferences::Preference)(Preferences::SEEN_HELP_0 + topic);
+	Preferences::Preference preference = GetPreference(topic);
 	if (Preferences::Has(preference))
 		return false;
 
 	Preferences::Set(preference);
 	return true;
+}
+
+bool Help::Seen(Topic topic)
+{
+	return Preferences::Has(GetPreference(topic));
+}
+
+void Help::Reactivate()
+{
+	for (int t=0; t<MAX; t++)
+		Preferences::Set(GetPreference((Topic)t), false);
 }
 
 const char *Help::TopicName(Topic topic)

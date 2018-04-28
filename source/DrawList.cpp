@@ -115,7 +115,7 @@ void DrawList::Draw() const
 {
 	SpriteShader::Bind();
 	
-	bool withBlur = Preferences::Has("Render motion blur");
+	bool withBlur = Preferences::Has(Preferences::RENDER_MOTION_BLUR);
 	for(const SpriteShader::Item &item : items)
 		SpriteShader::Add(item, withBlur);
 	
