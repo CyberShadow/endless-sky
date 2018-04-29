@@ -95,6 +95,8 @@ MapPanel::MapPanel(PlayerInfo &player, int commodity, const System *special)
 	// Recalculate escort positions every time the map is opened, as they may
 	// be changing systems even if the player does not.
 	TallyEscorts(player.Ships(), escortSystems);
+	// Ensure any system visibility data is fresh.
+	player.ClearCache();
 	
 	if(selectedSystem)
 		center = Point(0., 0.) - selectedSystem->Position();

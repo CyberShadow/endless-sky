@@ -238,7 +238,10 @@ public:
 	void SetMapZoom(int level);
 	// Get the set of collapsed categories for the named panel.
 	std::set<std::string> &Collapsed(const std::string &name);
-	
+
+	// Clear seen/visited cache.
+	void ClearCache();
+
 	
 private:
 	// Don't anyone else to copy this class, because pointers won't get
@@ -264,6 +267,10 @@ private:
 	
 	// Check that this player's current state can be saved.
 	bool CanBeSaved() const;
+
+	bool GetCached(const System *system, std::map<const System*, bool> &cache, bool (PlayerInfo::*func)(const System*) const) const;
+	bool HasSeenImpl(const System *system) const;
+	bool KnowsNameImpl(const System *system) const;
 	
 	
 private:
@@ -304,6 +311,7 @@ private:
 	std::set<const System *> seen;
 	std::set<const System *> visitedSystems;
 	std::set<const Planet *> visitedPlanets;
+	mutable std::map<const System *, bool> seenCache, nameKnownCache;
 	std::vector<const System *> travelPlan;
 	const Planet *travelDestination = nullptr;
 	

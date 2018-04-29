@@ -1048,6 +1048,7 @@ bool PlayerInfo::TakeOff(UI *ui)
 	availableMissions.clear();
 	doneMissions.clear();
 	stock.clear();
+	ClearCache();
 	
 	// Special persons who appeared last time you left the planet, can appear again.
 	GameData::ResetPersons();
@@ -1358,6 +1359,7 @@ void PlayerInfo::AcceptJob(const Mission &mission, UI *ui)
 			it->Do(Mission::ACCEPT, *this, ui);
 			auto spliceIt = it->IsUnique() ? missions.begin() : missions.end();
 			missions.splice(spliceIt, availableJobs, it);
+			ClearCache();
 			break;
 		}
 }
@@ -1455,6 +1457,7 @@ void PlayerInfo::HandleBlockedMissions(Mission::Location location, UI *ui)
 void PlayerInfo::MissionCallback(int response)
 {
 	boardingShip.reset();
+	ClearCache();
 	list<Mission> &missionList = availableMissions.empty() ? boardingMissions : availableMissions;
 	if(missionList.empty())
 		return;
@@ -1617,9 +1620,18 @@ void PlayerInfo::CheckReputationConditions()
 
 
 
-// Check if the player knows the location of the given system (whether or not
-// they have actually visited it).
+// Check if the player knows the location of the given system (whether
+// or not they have actually visited it). As this is computationally
+// non-trivial and e.g. in the map screen is called many times per
+// frame, cache the results.
 bool PlayerInfo::HasSeen(const System *system) const
+{
+	return GetCached(system, seenCache, &PlayerInfo::HasSeenImpl);
+}
+
+
+
+bool PlayerInfo::HasSeenImpl(const System *system) const
 {
 	for(const Mission &mission : availableJobs)
 	{
@@ -1666,9 +1678,18 @@ bool PlayerInfo::HasVisited(const Planet *planet) const
 
 
 
-// Check if the player knows the name of a system, either from visiting there or
-// because a job or active mission includes the name of that system.
+// Check if the player knows the name of a system, either from
+// visiting there or because a job or active mission includes the name
+// of that system. As this is computationally non-trivial and e.g. in
+// the map screen is called many times per frame, cache the results.
 bool PlayerInfo::KnowsName(const System *system) const
+{
+	return GetCached(system, nameKnownCache, &PlayerInfo::KnowsNameImpl);
+}
+
+
+
+bool PlayerInfo::KnowsNameImpl(const System *system) const
 {
 	if(HasVisited(system))
 		return true;
@@ -2086,6 +2107,28 @@ void PlayerInfo::SetMapZoom(int level)
 set<string> &PlayerInfo::Collapsed(const string &name)
 {
 	return collapsed[name];
+}
+
+
+
+bool PlayerInfo::GetCached(const System *object, std::map<const System*, bool> &cache, bool (PlayerInfo::*func)(const System*) const) const
+{
+	auto it = cache.find(object);
+	if (it == cache.end())
+	{
+		bool value = (this->*func)(object);
+		cache.insert(make_pair(object, value));
+		return value;
+	}
+	else
+		return it->second;
+}
+
+
+void PlayerInfo::ClearCache()
+{
+	seenCache.clear();
+	nameKnownCache.clear();
 }
 
 
