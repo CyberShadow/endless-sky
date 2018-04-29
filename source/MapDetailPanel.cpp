@@ -150,9 +150,9 @@ bool MapDetailPanel::KeyDown(SDL_Keycode key, Uint16 mod, const Command &command
 			// player has not visited either end of them.
 			if(it == original)
 				continue;
-			if(!player.HasSeen(it))
+			if(!HasSeen(it))
 				continue;
-			if(!(hasJumpDrive || player.HasVisited(it) || player.HasVisited(source)))
+			if(!(hasJumpDrive || HasVisited(it) || HasVisited(source)))
 				continue;
 			
 			// Generate a sortable angle with vector length as a tiebreaker.
@@ -421,7 +421,7 @@ void MapDetailPanel::DrawInfo()
 	font.Draw(systemName, uiPoint + Point(-90., -7.), medium);
 	
 	governmentY = uiPoint.Y() + 10.;
-	string gov = player.HasVisited(selectedSystem) ?
+	string gov = HasVisited(selectedSystem) ?
 		selectedSystem->GetGovernment()->GetName() : "Unknown Government";
 	font.Draw(gov, uiPoint + Point(-90., 13.), (commodity == SHOW_GOVERNMENT) ? medium : dim);
 	if(commodity == SHOW_GOVERNMENT)
@@ -432,7 +432,7 @@ void MapDetailPanel::DrawInfo()
 	
 	planetY.clear();
 	// Draw the basic information for visitable planets in this system.
-	if(player.HasVisited(selectedSystem))
+	if(HasVisited(selectedSystem))
 	{
 		set<const Planet *> shown;
 		const Sprite *planetSprite = SpriteSet::Get("ui/map planet");
@@ -479,7 +479,7 @@ void MapDetailPanel::DrawInfo()
 					PointerShader::Draw(uiPoint + Point(-60., 15.), Point(1., 0.),
 						10., 10., 0., medium);
 				
-				bool hasVisited = player.HasVisited(planet);
+				bool hasVisited = HasVisited(planet);
 				font.Draw(hasVisited ? "(has been visited)" : "(not yet visited)",
 					uiPoint + Point(-70., 28.),
 					dim);
@@ -511,7 +511,7 @@ void MapDetailPanel::DrawInfo()
 		
 		string price;
 		
-		bool hasVisited = player.HasVisited(selectedSystem);
+		bool hasVisited = HasVisited(selectedSystem);
 		if(hasVisited && selectedSystem->IsInhabited(player.Flagship()))
 		{
 			int value = selectedSystem->Trade(commodity.name);
@@ -546,7 +546,7 @@ void MapDetailPanel::DrawInfo()
 	}
 	
 	if(selectedPlanet && !selectedPlanet->Description().empty()
-			&& player.HasVisited(selectedPlanet) && !selectedPlanet->IsWormhole())
+			&& HasVisited(selectedPlanet) && !selectedPlanet->IsWormhole())
 	{
 		static const int X_OFFSET = 240;
 		static const int WIDTH = 500;
@@ -574,7 +574,7 @@ void MapDetailPanel::DrawOrbits()
 	SpriteShader::Draw(orbitSprite, Screen::TopRight() + .5 * Point(-orbitSprite->Width(), orbitSprite->Height()));
 	Point orbitCenter = Screen::TopRight() + Point(-120., 160.);
 	
-	if(!selectedSystem || !player.HasVisited(selectedSystem))
+	if(!selectedSystem || !HasVisited(selectedSystem))
 		return;
 	
 	const Font &font = FontSet::Get(14);

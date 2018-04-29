@@ -67,6 +67,20 @@ namespace {
 				locations[ship->GetParent()->GetSystem()] = true;
 		}
 	}
+
+	template<class T>
+	bool CachePlayerFlag(map<const T*, bool> &cache, PlayerInfo &player, const T* object, bool (PlayerInfo::*func)(const T*) const)
+	{
+		auto it = cache.find(object);
+		if (it == cache.end())
+		{
+			bool value = (player.*func)(object);
+			cache.insert(make_pair(object, value));
+			return value;
+		}
+		else
+			return it->second;
+	}
 	
 	const Color black(0., 1.);
 	const Color red(1., 0., 0., 1.);
@@ -95,6 +109,10 @@ MapPanel::MapPanel(PlayerInfo &player, int commodity, const System *special)
 	// Recalculate escort positions every time the map is opened, as they may
 	// be changing systems even if the player does not.
 	TallyEscorts(player.Ships(), escortSystems);
+	// Clear cache of what systems the player knows about.
+	seenSystems.clear();
+	visitedSystems.clear();
+	visitedPlanets.clear();
 	
 	if(selectedSystem)
 		center = Point(0., 0.) - selectedSystem->Position();
@@ -135,7 +153,7 @@ void MapPanel::Draw()
 		static const string UNKNOWN = "You have not yet mapped a route to this system.";
 		const Font &font = FontSet::Get(18);
 		
-		const string &message = player.HasVisited(selectedSystem) ? UNAVAILABLE : UNKNOWN;
+		const string &message = HasVisited(selectedSystem) ? UNAVAILABLE : UNKNOWN;
 		Point point(-font.Width(message) / 2, Screen::Top() + 40);
 		font.Draw(message, point + Point(1, 1), black);
 		font.Draw(message, point, red);
@@ -327,7 +345,7 @@ bool MapPanel::Click(int x, int y, int clicks)
 	Point click = Point(x, y) / Zoom() - center;
 	for(const auto &it : GameData::Systems())
 		if(click.Distance(it.second.Position()) < 10.
-				&& (player.HasSeen(&it.second) || &it.second == specialSystem))
+				&& (HasSeen(&it.second) || &it.second == specialSystem))
 		{
 			Select(&it.second);
 			break;
@@ -503,7 +521,7 @@ void MapPanel::Find(const string &name)
 {
 	int bestIndex = 9999;
 	for(const auto &it : GameData::Systems())
-		if(player.HasVisited(&it.second))
+		if(HasVisited(&it.second))
 		{
 			int index = Search(it.first, name);
 			if(index >= 0 && index < bestIndex)
@@ -519,7 +537,7 @@ void MapPanel::Find(const string &name)
 			}
 		}
 	for(const auto &it : GameData::Planets())
-		if(player.HasVisited(it.second.GetSystem()))
+		if(HasVisited(it.second.GetSystem()))
 		{
 			int index = Search(it.first, name);
 			if(index >= 0 && index < bestIndex)
@@ -557,6 +575,28 @@ bool MapPanel::IsSatisfied(const Mission &mission) const
 bool MapPanel::IsSatisfied(const PlayerInfo &player, const Mission &mission)
 {
 	return mission.IsSatisfied(player) && !mission.HasFailed(player);
+}
+
+
+
+// Check PlayerInfo::HasSeen/HasVisited and cache it.
+bool MapPanel::HasSeen(const System *system)
+{
+	return CachePlayerFlag(seenSystems, player, system, &PlayerInfo::HasSeen);
+}
+
+
+
+bool MapPanel::HasVisited(const System *system)
+{
+	return CachePlayerFlag(visitedSystems, player, system, &PlayerInfo::HasVisited);
+}
+
+
+
+bool MapPanel::HasVisited(const Planet *planet)
+{
+	return CachePlayerFlag(visitedPlanets, player, planet, &PlayerInfo::HasVisited);
 }
 
 
@@ -612,9 +652,9 @@ void MapPanel::DrawTravelPlan()
 		bool isJump = !isHyper && previous->Neighbors().count(next);
 		bool isWormhole = false;
 		for(const StellarObject &object : previous->Objects())
-			isWormhole |= (object.GetPlanet() && player.HasVisited(object.GetPlanet())
+			isWormhole |= (object.GetPlanet() && HasVisited(object.GetPlanet())
 				&& !object.GetPlanet()->Description().empty()
-				&& player.HasVisited(previous) && player.HasVisited(next)
+				&& HasVisited(previous) && HasVisited(next)
 				&& object.GetPlanet()->WormholeDestination(previous) == next);
 		
 		if(!isHyper && !isJump && !isWormhole)
@@ -669,7 +709,7 @@ void MapPanel::DrawEscorts()
 	const Color &parkedOnly = *GameData::Colors().Get("dim");
 	double zoom = Zoom();
 	for(const pair<const System *, bool> &squad : escortSystems)
-		if(player.HasSeen(squad.first) || squad.first == specialSystem)
+		if(HasSeen(squad.first) || squad.first == specialSystem)
 		{
 			Point pos = zoom * (squad.first->Position() + center);
 			RingShader::Draw(pos, INNER - 1., 0., squad.second ? unparked : parkedOnly);
@@ -688,14 +728,14 @@ void MapPanel::DrawWormholes()
 	// share a link vector. If a wormhole's planet has no description, no link will be drawn.
 	for(const auto &it : GameData::Planets())
 	{
-		if(!it.second.IsWormhole() || !player.HasVisited(&it.second) || it.second.Description().empty())
+		if(!it.second.IsWormhole() || !HasVisited(&it.second) || it.second.Description().empty())
 			continue;
 		
 		const vector<const System *> &waypoints = it.second.WormholeSystems();
 		const System *from = waypoints.back();
 		for(const System *to : waypoints)
 		{
-			if(player.HasVisited(from) && player.HasVisited(to))
+			if(HasVisited(from) && HasVisited(to))
 				arrowsToDraw.emplace(from, to);
 			
 			from = to;
@@ -747,16 +787,16 @@ void MapPanel::DrawLinks()
 	for(const auto &it : GameData::Systems())
 	{
 		const System *system = &it.second;
-		if(!player.HasSeen(system))
+		if(!HasSeen(system))
 			continue;
 		
 		for(const System *link : system->Links())
-			if(link < system || !player.HasSeen(link))
+			if(link < system || !HasSeen(link))
 			{
 				// Only draw links between two systems if one of the two is
 				// visited. Also, avoid drawing twice by only drawing in the
 				// direction of increasing pointer values.
-				if(!player.HasVisited(system) && !player.HasVisited(link))
+				if(!HasVisited(system) && !HasVisited(link))
 					continue;
 				
 				Point from = Zoom() * (system->Position() + center);
@@ -788,13 +828,13 @@ void MapPanel::DrawSystems()
 		// system record. Ignore those.
 		if(system.Name().empty())
 			continue;
-		if(!player.HasSeen(&system) && &system != specialSystem)
+		if(!HasSeen(&system) && &system != specialSystem)
 			continue;
 		
 		Point pos = zoom * (system.Position() + center);
 		
 		Color color = UninhabitedColor();
-		if(!player.HasVisited(&system))
+		if(!HasVisited(&system))
 			color = UnexploredColor();
 		else if(system.IsInhabited(player.Flagship()) || commodity == SHOW_SPECIAL)
 		{
@@ -833,7 +873,7 @@ void MapPanel::DrawSystems()
 					for(const StellarObject &object : system.Objects())
 						if(object.GetPlanet() && !object.GetPlanet()->IsWormhole())
 						{
-							bool visited = player.HasVisited(object.GetPlanet());
+							bool visited = HasVisited(object.GetPlanet());
 							all &= visited;
 							some |= visited;
 						}

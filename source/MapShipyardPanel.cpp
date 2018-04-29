@@ -176,7 +176,7 @@ void MapShipyardPanel::DrawItems()
 			info += Format::Number(ship->Attributes().Get("hull")) + " hull";
 			
 			bool isForSale = true;
-			if(selectedSystem && player.HasVisited(selectedSystem))
+			if(selectedSystem && HasVisited(selectedSystem))
 			{
 				isForSale = false;
 				for(const StellarObject &object : selectedSystem->Objects())
@@ -203,7 +203,7 @@ void MapShipyardPanel::Init()
 	catalog.clear();
 	set<const Ship *> seen;
 	for(const auto &it : GameData::Planets())
-		if(player.HasVisited(it.second.GetSystem()))
+		if(HasVisited(it.second.GetSystem()))
 			for(const Ship *ship : it.second.Shipyard())
 				if(!seen.count(ship))
 				{

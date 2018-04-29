@@ -201,7 +201,7 @@ void MapOutfitterPanel::DrawItems()
 			}
 			
 			bool isForSale = true;
-			if(selectedSystem && player.HasVisited(selectedSystem))
+			if(selectedSystem && HasVisited(selectedSystem))
 			{
 				isForSale = false;
 				for(const StellarObject &object : selectedSystem->Objects())
@@ -229,7 +229,7 @@ void MapOutfitterPanel::Init()
 	catalog.clear();
 	set<const Outfit *> seen;
 	for(const auto &it : GameData::Planets())
-		if(player.HasVisited(it.second.GetSystem()))
+		if(HasVisited(it.second.GetSystem()))
 			for(const Outfit *outfit : it.second.Outfitter())
 				if(!seen.count(outfit))
 				{

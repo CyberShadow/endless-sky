@@ -86,6 +86,11 @@ protected:
 	bool IsSatisfied(const Mission &mission) const;
 	static bool IsSatisfied(const PlayerInfo &player, const Mission &mission);
 	
+	// Check PlayerInfo::HasSeen/HasVisited and cache it.
+	bool HasSeen(const System *);
+	bool HasVisited(const System *);
+	bool HasVisited(const Planet *);
+
 	// Function for the "find" dialogs:
 	static int Search(const std::string &str, const std::string &sub);
 	
@@ -111,6 +116,9 @@ protected:
 	std::map<const Government *, double> closeGovernments;
 	// Systems in which your escorts are located.
 	std::map<const System *, bool> escortSystems;
+	// Cache of which planets/systems the player knows about.
+	std::map<const Planet *, bool> visitedPlanets;
+	std::map<const System *, bool> seenSystems, visitedSystems;
 	
 	
 private:
